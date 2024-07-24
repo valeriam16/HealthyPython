@@ -66,7 +66,7 @@ class DataManagement:
 
         # En caso de que si haya Internet y al menos se tenga un objeto mi self.listaJson
         if self.verifyInternetConnection():
-            self.serialPortInstance.sendSettingsAlarms()  # CHECAR AQUÍ, PORQUE NO SE COMO SE ESTARÁ MANDANDO AL ARDUINO ----------
+            #self.serialPortInstance.sendSettingsAlarms()  # CHECAR AQUÍ, PORQUE NO SE COMO SE ESTARÁ MANDANDO AL ARDUINO ----------
             if len(self.listaJson) > 0:
                 self.sendJsonToMongo()
             else:
@@ -78,7 +78,7 @@ class DataManagement:
 
 
 if __name__ == "__main__":
-    port = "COM9"
+    port = "/dev/ttyUSB0"
     baudrate = 9600
     instancia = DataManagement(port, baudrate)
     while True:

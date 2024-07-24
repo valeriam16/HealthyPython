@@ -3,9 +3,9 @@ from pymongo import MongoClient
 
 class ConnectingToMongoDB:
     def __init__(self):
-        self.uri = "mongodb+srv://admin:valeria1611@myatlasclusteredu.njl6yr2.mongodb.net/?retryWrites=true&w=majority"
-        self.databaseName = 'integradora'
-        self.collectionName = "historial"
+        self.uri = "mongodb+srv://myAtlasDBUser:rEqYo5tJvuYzFlI3@myatlasclusteredu.ipyk1vz.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
+        self.databaseName = 'TestIntegradora01'
+        self.collectionName = "Dispositives"
         # Aquí comienza la conexión
         self.client = MongoClient(self.uri)
         self.db = self.client[self.databaseName]

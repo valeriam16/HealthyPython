@@ -69,8 +69,8 @@ class SerialPort:
                     continue
 
                 identifier = sensorData[0].strip()
-                number = sensorData[1].strip()
-                value = sensorData[2].strip()
+                number = "1"
+                value = sensorData[1].strip()
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 parsed_data.append({
@@ -113,21 +113,21 @@ class SerialPort:
     def requestData(self):
         opcion = self.impresion()
         if opcion == 1:
-            return self.request('T')
+            return self.request('TMP')
         elif opcion == 2:
-            return self.request('R')
+            return self.request('RTC')
         elif opcion == 3:
-            return self.request('A')
+            return self.request('ALC')
         elif opcion == 4:
             return self.request('P')
         elif opcion == 5:
             return self.request('M')
         elif opcion == 6:
-            return self.request('D')
+            return self.request('DST')
         elif opcion == 7:
-            return self.request('S')
+            return self.request('PSS')
         elif opcion == 8:
-            return self.request('X')
+            return self.request('TDO')
         elif opcion == 9:
             print("Cerrando puerto COM.")
             self.closePort()
@@ -138,11 +138,11 @@ class SerialPort:
             return None
 
     # Recibir configuración de alarmas de la API y mandar al Arduino --------- CHECAR CON LA API, PORQUE NO SE CUAL ES EL RESPONSE
-    def sendSettingsAlarms(self):
-        try:
-            instance = ApiRequest()
-            response = instance.requestConfigurationAlarms()
-            self.serialPort.write(response.encode())
-        except serial.SerialException as e:
-            print("Error en el envío de datos al puerto serial:", e)
+    # def sendSettingsAlarms(self):
+    #     try:
+    #         instance = ApiRequest()
+    #         response = instance.requestConfigurationAlarms()
+    #         self.serialPort.write(response.encode())
+    #     except serial.SerialException as e:
+    #         print("Error en el envío de datos al puerto serial:", e)
 

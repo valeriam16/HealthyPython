@@ -19,13 +19,30 @@ class DataManagement:
         self.deviceID = self.leer_configuracion()
 
         self.loadJson()
-        self.updateConfig(self.serialPortInstance)
-        self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, self.serialPortInstance)
-
-        self.connection.startWatching(self.saveJson, self.updateConfig, self.serialPortInstance, self.setTime, self.deviceID)
+        self.verifyConfig()
 
 
-    
+    def verifyConfig(self):
+        if self.verifyInternetConnection() == True:
+            if self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, self.serialPortInstance) == False:
+                print("No se encontró un registro de este dispositivo.")
+                self.serialPortInstance.sendSerialString("DES:"+str(self.deviceID[0])+":"+str(self.deviceID[1]))
+                sleep(10)
+                self.verifyConfig()
+                return
+            else:
+                print("Configuración actualizada correctamente.")
+                self.connection.startWatching(self.saveJson, self.updateConfig, self.serialPortInstance, self.setTime, self.deviceID)
+                return
+        else:
+            print("No hay conexión a Internet.")
+            if self.updateConfig(self.serialPortInstance) == False:
+                print("El dispositivo no ha sido registrado. Conectate a internet para obtener la configuración.")
+                self.serialPortInstance.sendSerialString("DES:0:0")
+                sleep(10)
+                self.verifyConfig()
+                return
+                
     def leer_configuracion(self):
         archivo_config = 'config.json'
         try:
@@ -99,9 +116,12 @@ class DataManagement:
         try:
             with open('device.json', 'r') as archivo:
                 configuraciones = json.load(archivo)
+                if len(configuraciones) == 0:
+                    print("No hay dispositivos en el archivo JSON.")
+                    return False
         except IOError as e:
             print(f"Error al abrir el archivo JSON: {e}")
-            return
+            return False
 
         for dispositivo in configuraciones:
             for sensor in dispositivo['sensors']:
@@ -112,6 +132,8 @@ class DataManagement:
                 mensaje_config = f"UPA:{configuracion['type']}:{configuracion['value']}"
                 serial_sender.sendSerialString(mensaje_config)
                  
+        return True
+    
     def setTime(self, serial_sender, time):
         print("Enviando hora al dispositivo..."+time)
         serial_sender.sendSerialString("RLJ:"+time)

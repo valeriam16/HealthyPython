@@ -15,6 +15,7 @@ class ConnectingToMongoDB:
         # Aquí comienza la conexión
         self.startConnection()
 
+
     def startConnection(self):
         if self.db is None:
             try:
@@ -27,7 +28,6 @@ class ConnectingToMongoDB:
                 print(f"Error al conectar a la base de datos")
                 return False
         return True
-
 
     def insertMany(self, documents):
         if self.startConnection() == False:
@@ -50,12 +50,15 @@ class ConnectingToMongoDB:
 
     def findAndUpdateChanges(self, deviceIDs, saveChanges, updateConfig, serialPortInstance):
         if self.startConnection() == False:
-            return
+            return False
         matching_documents = list(self.collectionConfig.find({"id": {"$in": deviceIDs}},{"_id": 0}))
         print("Documentos coincidentes:", matching_documents)
+        if len(matching_documents) < 2 or (matching_documents[1]["id"] != deviceIDs[1] and matching_documents[1]["id"] != deviceIDs[0]):
+            return False
         saveChanges(matching_documents, "device")
         sleep(1)
         updateConfig(serialPortInstance)
+        return True
 
     def watchCollection(self, saveChanges, updateConfig, serialPortInstance, deviceIDs):
         pipeline = [

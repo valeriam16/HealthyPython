@@ -4,18 +4,37 @@ import time
 import requests
 from ConnectingToMongoDB import ConnectingToMongoDB
 from SerialPort import SerialPort
+import threading
+from time import sleep
 
 
 class DataManagement:
     def __init__(self, port, baudrate):
         self.port = port
         self.baudrate = baudrate
+        self.connection = ConnectingToMongoDB()
 
         self.serialPortInstance = SerialPort(self.port, self.baudrate)
         self.listaJson = []
+        self.deviceID = self.leer_configuracion()
 
         self.loadJson()
+        self.updateConfig(self.serialPortInstance)
+        self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, self.serialPortInstance)
 
+        self.connection.startWatching(self.saveJson, self.updateConfig, self.serialPortInstance, self.setTime, self.deviceID)
+
+
+    
+    def leer_configuracion(self):
+        archivo_config = 'config.json'
+        try:
+            with open(archivo_config, 'r') as archivo:
+                configuracion = json.load(archivo)
+                return configuracion.get('dispositives', [])
+        except IOError as e:
+            print(f"Error al abrir el archivo JSON: {e}")
+            return []
     # Este método es el que lee lo que hay en el JSON y regresa los datos
     def readJson(self):
         with open('data.json', 'r', encoding='utf-8') as file:
@@ -26,14 +45,17 @@ class DataManagement:
     def loadJson(self):
         if os.path.exists('data.json') and os.path.getsize('data.json') > 0:
             self.listaJson = self.readJson()
+            self.sendJsonToMongo()
         else:
             print("No hay registros en mi JSON.")
             return []
 
+
+
     # Este método se va mandar llamar SIEMPRE, independientemente de si se guarda en JSON o se sube a MongoDB
-    def saveJson(self):
-        with open('data.json', 'w', encoding='utf-8') as file:
-            json.dump(self.listaJson, file, ensure_ascii=False, indent=2)
+    def saveJson(self,jsonObject,jsonFile):
+        with open(jsonFile+'.json', 'w', encoding='utf-8') as file:
+            json.dump(jsonObject, file, ensure_ascii=False, indent=2)
 
     def verifyInternetConnection(self):
         try:
@@ -42,43 +64,60 @@ class DataManagement:
                 return True
             else:
                 return False
-        except requests.ConnectionError:
+        except Exception as e:
             return False
 
     # Este método solo se encarga de mandar los datos a MongoDB con un insertMany()
     def sendJsonToMongo(self):
-        print("self.listaJson", self.listaJson)
+        if len(self.listaJson) <= 0:
+            return
         try:
             # print("lsitaJosn", self.listaJson)
             # print("type", type(self.listaJson))
-            connection = ConnectingToMongoDB()
-            connection.insertMany(self.listaJson)
+            self.connection.insertMany(self.listaJson)
             print('JSON enviado a MongoDB correctamente.')
             self.listaJson = []  # Vacíar el JSON cuando ya se subió a MongoDB
-            self.saveJson()  # Guardar el JSON vacío
+            self.saveJson(self.listaJson,"data")  # Guardar el JSON vacío
         except Exception as e:
             print('No se pudieron enviar los datos a MongoDB:', e)
 
     # Este método es el que se encarga de toda la lógica principal como cargar el JSON, agregar el objeto a la lista,
     # verificar si hay Internet y volver a guardar en el JSON
     def first(self):
-        self.listaJson = self.serialPortInstance.requestData()
+        self.listaJson = self.serialPortInstance.requestData()     
+        with open("data.json", 'r') as file:
+            data = json.load(file)
+            self.listaJson.extend(data)
 
-        # En caso de que si haya Internet y al menos se tenga un objeto mi self.listaJson
         if self.verifyInternetConnection():
-            #self.serialPortInstance.sendSettingsAlarms()  # CHECAR AQUÍ, PORQUE NO SE COMO SE ESTARÁ MANDANDO AL ARDUINO ----------
-            if len(self.listaJson) > 0:
-                self.sendJsonToMongo()
-            else:
-                print("No se tiene ningún dato en la lista.")
-        # Si no hay Internet guardaré en mi JSON mi self.listaJson
+            self.sendJsonToMongo()
         else:
-            self.saveJson()
+            self.saveJson(self.listaJson,"data")
             print('Datos guardados en el archivo JSON porque no hay conexión a Internet.')
+                    
+    def updateConfig(self,serial_sender):
+        try:
+            with open('device.json', 'r') as archivo:
+                configuraciones = json.load(archivo)
+        except IOError as e:
+            print(f"Error al abrir el archivo JSON: {e}")
+            return
 
+        for dispositivo in configuraciones:
+            for sensor in dispositivo['sensors']:
+                mensaje_sensor = f"NEW:{sensor['type']}:{sensor['id']}"
+                serial_sender.sendSerialString(mensaje_sensor) 
+
+            for configuracion in dispositivo['configurations']:
+                mensaje_config = f"UPA:{configuracion['type']}:{configuracion['value']}"
+                serial_sender.sendSerialString(mensaje_config)
+                 
+    def setTime(self, serial_sender, time):
+        print("Enviando hora al dispositivo..."+time)
+        serial_sender.sendSerialString("RLJ:"+time)
 
 if __name__ == "__main__":
-    port = "/dev/ttyUSB0"
+    port = "COM7"
     baudrate = 9600
     instancia = DataManagement(port, baudrate)
     while True:

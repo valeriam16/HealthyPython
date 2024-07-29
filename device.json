@@ -1,0 +1,61 @@
+[
+  {
+    "id": 3,
+    "type": "BRZ",
+    "sensors": [
+      {
+        "id": 11,
+        "type": "TMP"
+      },
+      {
+        "id": 10,
+        "type": "RTC"
+      },
+      {
+        "id": 12,
+        "type": "ALC"
+      },
+      {
+        "id": 9,
+        "type": "PSS"
+      },
+      {
+        "id": 8,
+        "type": "DST"
+      }
+    ],
+    "configurations": [
+      {
+        "type": "RTC",
+        "value": "100"
+      },
+      {
+        "type": "PSS",
+        "value": "10"
+      },
+      {
+        "type": "DST",
+        "value": "100.0"
+      },
+      {
+        "type": "UPS",
+        "value": "4"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "type": "PSA",
+    "sensors": [
+      {
+        "id": 6,
+        "type": "PSO"
+      },
+      {
+        "id": 44,
+        "type": "RLJ"
+      }
+    ],
+    "configurations": []
+  }
+]

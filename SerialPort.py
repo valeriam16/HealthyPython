@@ -1,7 +1,7 @@
 import datetime
 import serial
 import time
-from ApiRequest import ApiRequest
+import json
 
 # Nos indica si el puerto serial se encuentra abierto o cerrado
 port_opened = False
@@ -13,7 +13,6 @@ class SerialPort:
         self.baudrate = baudrate
         self.serialPort = None  # Instancia para abrir y cerrar el puerto seial
         self.open_port()  # Abrir el puerto
-
         self.lista = []
 
     # MANEJO DE PUERTO
@@ -41,21 +40,24 @@ class SerialPort:
         port_opened = False
 
     # ENVÍAR DATOS
-    def sendRequest(self, char):
+    def sendSerialString(self, message):
         try:
-            self.serialPort.write(char.encode())
+            message = message + "\n"
+            self.serialPort.write(message.encode())
         except serial.SerialException as e:
             print("Error en el envío de datos al puerto serial:", e)
 
     # LEER DATOS
-    def readSerialPort(self):
+    def readDevicesData(self):
         try:
             self.lista = []
             while self.serialPort.in_waiting > 0:
                 line = self.serialPort.readline().decode().strip()
                 if line:
                     self.lista.append(line)
-        except serial.SerialException as e:
+            
+            self.lista.append("RLJ:44"+":"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        except UnicodeDecodeError as e:
             print("Error en la lectura del puerto serial:", e)
             return None
 
@@ -64,85 +66,50 @@ class SerialPort:
         for line in self.lista:
             try:
                 sensorData = line.split(":")
-                if len(sensorData) < 3:
-                    print(f"Dato en formato incorrecto: {line}")
-                    continue
 
                 identifier = sensorData[0].strip()
-                number = "1"
-                value = sensorData[1].strip()
+                value = sensorData[2].strip()
+                id = int(sensorData[1].strip())
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+                if(identifier == "RLJ"):
+                    value =  sensorData[2].strip()+":"+sensorData[3].strip()
                 parsed_data.append({
-                    'Identifier': identifier,
-                    'Number': number,
-                    'Value': value,
-                    'Timestamp': timestamp
+                    'identifier': identifier,
+                    'value': value,
+                    'id': id,
+                    'timestamp': timestamp
                 })
             except Exception as e:
                 print(f"Error al parsear los datos del puerto serial: {e}")
 
         return parsed_data
 
-    def request(self, char):
-        self.sendRequest(char)
-        time.sleep(0.1)  # Esperar un poco para recibir respuesta
-        self.readSerialPort()
-        print("Esto es lo que me retorna el método parseData()", self.parseData())
+    def requestData(self):
+        with open('device.json', 'r') as archivo:
+            configuraciones = json.load(archivo)
+            for dispositivo in configuraciones:
+                if dispositivo['type'] == "BRZ":
+                    for sensor in dispositivo['sensors']:
+                        self.sendSerialString("REA:"+str(sensor['id']))
+                # elif dispositivo['type'] == "PSA":
+                #     for sensor in dispositivo['sensors']:
+                #         self.sendSerialString("REA:"+str(sensor['id']))
+        time.sleep(6) 
+        self.readDevicesData()
+        # print("Esto es lo que me retorna el método parseData()", self.parseData())
         return self.parseData()
 
-    def impresion(self):
-        print("Seleccione un número según los datos que necesita obtener: ")
-        print("1. Temperatura")
-        print("2. Ritmo cardiaco")
-        print("3. Alcohol")
-        print("4. Peso")
-        print("5. Tiempo")
-        print("6. Distancia")  # Flotante
-        print("7. Pasos")  # Entero
-        print("8. Requiero todo")
-        print("9. Salir")
-        try:
-            opcion = int(input("Opción: "))
-        except ValueError:
-            print("Entrada no válida. Por favor, ingrese un número.")
-            return None
-        return opcion
-
-    # Método general para solicitar datos y procesarlos
-    def requestData(self):
-        opcion = self.impresion()
-        if opcion == 1:
-            return self.request('TMP')
-        elif opcion == 2:
-            return self.request('RTC')
-        elif opcion == 3:
-            return self.request('ALC')
-        elif opcion == 4:
-            return self.request('P')
-        elif opcion == 5:
-            return self.request('M')
-        elif opcion == 6:
-            return self.request('DST')
-        elif opcion == 7:
-            return self.request('PSS')
-        elif opcion == 8:
-            return self.request('TDO')
-        elif opcion == 9:
-            print("Cerrando puerto COM.")
-            self.closePort()
-            print("Saliendo del programa... ¡Nos vemos!")
-            exit()
-        else:
-            print("Tipo de dato no válido.")
-            return None
-
-    # Recibir configuración de alarmas de la API y mandar al Arduino --------- CHECAR CON LA API, PORQUE NO SE CUAL ES EL RESPONSE
-    # def sendSettingsAlarms(self):
+    # def impresion(self):
+    #     print("Ingresa 'salir' para cerrar el puerto COM.")
     #     try:
-    #         instance = ApiRequest()
-    #         response = instance.requestConfigurationAlarms()
-    #         self.serialPort.write(response.encode())
-    #     except serial.SerialException as e:
-    #         print("Error en el envío de datos al puerto serial:", e)
+    #         opcion = input("Ingresa id de sensor: ")
+    #         if opcion == 'salir':
+    #             print("Cerrando puerto COM.")
+    #             self.closePort()
+    #             print("Saliendo del programa... ¡Nos vemos!")
+    #             exit()
+    #     except ValueError:
+    #         print("Entrada no válida. Por favor, ingrese un número.")
+    #         return None
+    #     return opcion
 

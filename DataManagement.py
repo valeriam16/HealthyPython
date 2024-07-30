@@ -4,6 +4,7 @@ import time
 import requests
 from ConnectingToMongoDB import ConnectingToMongoDB
 from SerialPort import SerialPort
+from BluetoothPort import BluetoothPort
 import threading
 from time import sleep
 
@@ -14,31 +15,33 @@ class DataManagement:
         self.baudrate = baudrate
         self.connection = ConnectingToMongoDB()
 
-        self.serialPortInstance = SerialPort(self.port, self.baudrate)
+        self.serialPortInstance = SerialPort(self.port, self.baudrate, "PSA")
+        self.bluetoothPortInstance = BluetoothPort("BRZ")
         self.listaJson = []
         self.deviceID = self.leer_configuracion()
 
         self.loadJson()
-        self.verifyConfig()
+        self.verifyConfig(self.serialPortInstance)
+        self.verifyConfig(self.bluetoothPortInstance)
 
 
-    def verifyConfig(self):
+    def verifyConfig(self,sender):
         if self.verifyInternetConnection() == True:
-            if self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, self.serialPortInstance) == False:
+            if self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, sender) == False:
                 print("No se encontró un registro de este dispositivo.")
-                self.serialPortInstance.sendSerialString("DES:"+str(self.deviceID[0])+":"+str(self.deviceID[1]))
+                sender.sendString("DES:"+str(self.deviceID[0])+":"+str(self.deviceID[1]))
                 sleep(10)
                 self.verifyConfig()
                 return
             else:
                 print("Configuración actualizada correctamente.")
-                self.connection.startWatching(self.saveJson, self.updateConfig, self.serialPortInstance, self.setTime, self.deviceID)
+                self.connection.startWatching(self.saveJson, self.updateConfig, sender, self.setTime, self.deviceID)
                 return
         else:
             print("No hay conexión a Internet.")
-            if self.updateConfig(self.serialPortInstance) == False:
+            if self.updateConfig(sender) == False:
                 print("El dispositivo no ha sido registrado. Conectate a internet para obtener la configuración.")
-                self.serialPortInstance.sendSerialString("DES:0:0")
+                sender.sendString("DES:0:0")
                 sleep(10)
                 self.verifyConfig()
                 return
@@ -101,7 +104,9 @@ class DataManagement:
     # Este método es el que se encarga de toda la lógica principal como cargar el JSON, agregar el objeto a la lista,
     # verificar si hay Internet y volver a guardar en el JSON
     def first(self):
-        self.listaJson = self.serialPortInstance.requestData()     
+        self.listaJson = []
+        self.listaJson.extend(self.serialPortInstance.requestData()  )   
+        self.listaJson.extend(self.bluetoothPortInstance.requestData())
         with open("data.json", 'r') as file:
             data = json.load(file)
             self.listaJson.extend(data)
@@ -112,7 +117,7 @@ class DataManagement:
             self.saveJson(self.listaJson,"data")
             print('Datos guardados en el archivo JSON porque no hay conexión a Internet.')
                     
-    def updateConfig(self,serial_sender):
+    def updateConfig(self,sender):
         try:
             with open('device.json', 'r') as archivo:
                 configuraciones = json.load(archivo)
@@ -126,17 +131,17 @@ class DataManagement:
         for dispositivo in configuraciones:
             for sensor in dispositivo['sensors']:
                 mensaje_sensor = f"NEW:{sensor['type']}:{sensor['id']}"
-                serial_sender.sendSerialString(mensaje_sensor) 
+                sender.sendString(mensaje_sensor) 
 
             for configuracion in dispositivo['configurations']:
                 mensaje_config = f"UPA:{configuracion['type']}:{configuracion['value']}"
-                serial_sender.sendSerialString(mensaje_config)
+                sender.sendString(mensaje_config)
                  
         return True
     
-    def setTime(self, serial_sender, time):
+    def setTime(self, sender, time):
         print("Enviando hora al dispositivo..."+time)
-        serial_sender.sendSerialString("RLJ:"+time)
+        sender.sendString("RLJ:"+time)
 
 if __name__ == "__main__":
     port = "COM7"

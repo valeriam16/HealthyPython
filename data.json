@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "identifier": "PSO",
+    "value": "0.77",
+    "id": 13,
+    "timestamp": "2024-08-02 23:23:06"
+  },
+  {
+    "identifier": "RLJ",
+    "value": "2024/08/02 23:22",
+    "id": 14,
+    "timestamp": "2024-08-02 23:23:06"
+  },
+  {
+    "identifier": "RTC",
+    "value": "32",
+    "id": 59,
+    "timestamp": "2024-08-02 23:23:09"
+  },
+  {
+    "identifier": "PSS",
+    "value": "14",
+    "id": 60,
+    "timestamp": "2024-08-02 23:23:09"
+  },
+  {
+    "identifier": "DST",
+    "value": "6.30",
+    "id": 61,
+    "timestamp": "2024-08-02 23:23:09"
+  },
+  {
+    "identifier": "TMP",
+    "value": "23.75",
+    "id": 62,
+    "timestamp": "2024-08-02 23:23:09"
+  },
+  {
+    "identifier": "ALC",
+    "value": "113",
+    "id": 63,
+    "timestamp": "2024-08-02 23:23:09"
+  },
+  {
+    "identifier": "PAN",
+    "value": "0",
+    "id": 64,
+    "timestamp": "2024-08-02 23:23:09"
+  }
+]

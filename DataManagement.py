@@ -6,6 +6,7 @@ from ConnectingToMongoDB import ConnectingToMongoDB
 from SerialPort import SerialPort
 from BluetoothPort import BluetoothPort
 import threading
+import serial
 from time import sleep
 
 
@@ -13,35 +14,35 @@ class DataManagement:
     def __init__(self, port, baudrate):
         self.port = port
         self.baudrate = baudrate
-        self.connection = ConnectingToMongoDB()
-
         self.serialPortInstance = SerialPort(self.port, self.baudrate, "PSA")
         self.bluetoothPortInstance = BluetoothPort("BRZ")
+        self.connectionBrz = ConnectingToMongoDB(self.bluetoothPortInstance)
+        self.connectionPsa = ConnectingToMongoDB(self.serialPortInstance)
+
         self.listaJson = []
         self.deviceID = self.leer_configuracion()
 
         self.loadJson()
-        self.verifyConfig(self.serialPortInstance)
-        self.verifyConfig(self.bluetoothPortInstance)
+        self.verifyConfig(self.connectionBrz)
+        self.verifyConfig(self.connectionPsa)
 
-
-    def verifyConfig(self,sender):
+    def verifyConfig(self,connection):
         if self.verifyInternetConnection() == True:
-            if self.connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig, sender) == False:
+            if connection.findAndUpdateChanges(self.deviceID, self.saveJson, self.updateConfig) == False:
                 print("No se encontró un registro de este dispositivo.")
-                sender.sendString("DES:"+str(self.deviceID[0])+":"+str(self.deviceID[1]))
+                connection.sender.sendString("DES:"+str(self.deviceID[0])+":"+str(self.deviceID[1]))
                 sleep(10)
                 self.verifyConfig()
                 return
             else:
                 print("Configuración actualizada correctamente.")
-                self.connection.startWatching(self.saveJson, self.updateConfig, sender, self.setTime, self.deviceID)
+                connection.startWatching(self.saveJson, self.updateConfig, self.setTime, self.deviceID)
                 return
         else:
             print("No hay conexión a Internet.")
-            if self.updateConfig(sender) == False:
+            if self.updateConfig(connection.sender) == False:
                 print("El dispositivo no ha sido registrado. Conectate a internet para obtener la configuración.")
-                sender.sendString("DES:0:0")
+                connection.sender.sendString("DES:0:0")
                 sleep(10)
                 self.verifyConfig()
                 return
@@ -94,7 +95,7 @@ class DataManagement:
         try:
             # print("lsitaJosn", self.listaJson)
             # print("type", type(self.listaJson))
-            self.connection.insertMany(self.listaJson)
+            self.connectionBrz.insertMany(self.listaJson)
             print('JSON enviado a MongoDB correctamente.')
             self.listaJson = []  # Vacíar el JSON cuando ya se subió a MongoDB
             self.saveJson(self.listaJson,"data")  # Guardar el JSON vacío
@@ -104,14 +105,24 @@ class DataManagement:
     # Este método es el que se encarga de toda la lógica principal como cargar el JSON, agregar el objeto a la lista,
     # verificar si hay Internet y volver a guardar en el JSON
     def first(self):
+
+        
+        if self.serialPortInstance.activar == True:
+            self.verifyConfig(self.connectionPsa)
+            self.serialPortInstance.activar = False
+        elif self.bluetoothPortInstance.activar==True:
+            self.verifyConfig(self.connectionBrz)
+            self.bluetoothPortInstance.activar = False
+
         self.listaJson = []
-        self.listaJson.extend(self.serialPortInstance.requestData()  )   
-        self.listaJson.extend(self.bluetoothPortInstance.requestData())
+        self.listaJson.extend(self.serialPortInstance.requestData())  
+        self.listaJson.extend(self.bluetoothPortInstance.requestData())  
         with open("data.json", 'r') as file:
             data = json.load(file)
             self.listaJson.extend(data)
 
         if self.verifyInternetConnection():
+            
             self.sendJsonToMongo()
         else:
             self.saveJson(self.listaJson,"data")
@@ -129,14 +140,15 @@ class DataManagement:
             return False
 
         for dispositivo in configuraciones:
-            for sensor in dispositivo['sensors']:
-                mensaje_sensor = f"NEW:{sensor['type']}:{sensor['id']}"
-                sender.sendString(mensaje_sensor) 
+            if dispositivo['type'] == sender.type:
+                for sensor in dispositivo['sensors']:
+                    mensaje_sensor = f"NEW:{sensor['type']}:{sensor['id']}"
+                    sender.sendString(mensaje_sensor) 
 
-            for configuracion in dispositivo['configurations']:
-                mensaje_config = f"UPA:{configuracion['type']}:{configuracion['value']}"
-                sender.sendString(mensaje_config)
-                 
+                for configuracion in dispositivo['configurations']:
+                    mensaje_config = f"UPA:{configuracion['type']}:{configuracion['value']}"
+                    sender.sendString(mensaje_config)
+                    
         return True
     
     def setTime(self, sender, time):
@@ -144,9 +156,9 @@ class DataManagement:
         sender.sendString("RLJ:"+time)
 
 if __name__ == "__main__":
-    port = "COM7"
+    # sleep(60)
+    port = ["/dev/ttyUSB0","/dev/ttyUSB1"]
     baudrate = 9600
     instancia = DataManagement(port, baudrate)
     while True:
         instancia.first()
-        time.sleep(1)

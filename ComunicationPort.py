@@ -6,7 +6,9 @@ import json
 class ComunicationPort():
     def __init__(self,type):
         self.lista = []
+        self.activo = False
         self.type=type
+        self.activar = False
 
     # ENVÍAR DATOS
     def sendString(self, message):
@@ -17,7 +19,11 @@ class ComunicationPort():
         return
 
     def parseData(self):
+        
         parsed_data = []
+        
+        print("enviado a parsear: ")
+        print(self.lista)
         for line in self.lista:
             try:
                 sensorData = line.split(":")
@@ -34,19 +40,21 @@ class ComunicationPort():
                     'id': id,
                     'timestamp': timestamp
                 })
+                
+                self.lista = []
             except Exception as e:
                 print(f"Error al parsear los datos del puerto serial: {e}")
-
+        
+        self.lista = []
         return parsed_data
 
     def requestData(self):
-        self.lista = []
         with open('device.json', 'r') as archivo:
             configuraciones = json.load(archivo)
             for dispositivo in configuraciones:
                 if dispositivo['type'] == self.type:
                     for sensor in dispositivo['sensors']:
                         self.sendString("REA:"+str(sensor['id']))
-        time.sleep(6) 
+        time.sleep(3) 
         self.readDevicesData()
         return self.parseData()

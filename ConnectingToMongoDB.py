@@ -7,7 +7,7 @@ from time import sleep
 class ConnectingToMongoDB:
     def __init__(self,sender):
         self.uri = "mongodb+srv://myAtlasDBUser:rEqYo5tJvuYzFlI3@myatlasclusteredu.ipyk1vz.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
-        self.databaseName = 'TestIntegradora03'
+        self.databaseName = 'Integrachola'
         self.db = None
         self.client = None
         self.collection = None
@@ -40,6 +40,7 @@ class ConnectingToMongoDB:
         if self.startConnection() == False:
             return
         operations = []
+        print(documents)
         for doc in documents:
             sensor_id = doc.pop('id', None)
             if sensor_id is not None:

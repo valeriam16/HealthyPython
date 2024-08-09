@@ -1,52 +1,37 @@
 [
   {
     "id": 5,
-    "type": "PSA",
-    "sensors": [
-      {
-        "id": 13,
-        "type": "PSO"
-      },
-      {
-        "id": 14,
-        "type": "RLJ"
-      }
-    ],
-    "configurations": []
-  },
-  {
-    "id": 14,
     "type": "BRZ",
     "sensors": [
       {
-        "id": 59,
+        "id": 25,
         "type": "RTC"
       },
       {
-        "id": 60,
+        "id": 26,
         "type": "PSS"
       },
       {
-        "id": 61,
+        "id": 27,
         "type": "DST"
       },
       {
-        "id": 62,
+        "id": 28,
         "type": "TMP"
       },
       {
-        "id": 63,
+        "id": 29,
         "type": "ALC"
       },
       {
-        "id": 64,
+        "id": 30,
         "type": "PAN"
       }
     ],
     "configurations": [
       {
         "type": "DST",
-        "value": "100.0"
+        "value": "2"
       },
       {
         "type": "PSS",
@@ -59,6 +44,26 @@
       {
         "type": "RTC",
         "value": "100"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "type": "PSA",
+    "sensors": [
+      {
+        "id": 33,
+        "type": "PSO"
+      },
+      {
+        "id": 34,
+        "type": "RLJ"
+      }
+    ],
+    "configurations": [
+      {
+        "type": "CAL",
+        "value": "76"
       }
     ]
   }

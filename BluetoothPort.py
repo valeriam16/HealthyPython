@@ -1,7 +1,4 @@
-import datetime
-import serial
-import time
-import json
+import threading
 from time import sleep
 from ComunicationPort import ComunicationPort
 from bluepy.btle import Peripheral, UUID, DefaultDelegate
@@ -22,18 +19,18 @@ class MyDelegate(DefaultDelegate):
         self.bluetooth_port.lista.append(decoded_data)
         print(data)
 
+
 class BluetoothPort(ComunicationPort):
 
     def __init__(self, type):
         super().__init__(type)
+        self.activo = False
         self.connect()
 
     def connect(self):
-        self.activo = False
         try:
             self.dev = Peripheral(esp32_mac_address)
             self.dev.setDelegate(MyDelegate(self))
-                
             service = self.dev.getServiceByUUID(uart_service_uuid)
             self.tx_characteristic = service.getCharacteristics(tx_characteristic_uuid)[0]
             self.rx_characteristic = service.getCharacteristics(rx_characteristic_uuid)[0]
@@ -43,27 +40,29 @@ class BluetoothPort(ComunicationPort):
             descriptor.write(b'\x01\x00')
 
             # Reconfigurar notificaciones
-            time.sleep(1)
+            sleep(1)
             descriptor.write(b'\x00\x00')  # Deshabilitar
-            time.sleep(1)
+            sleep(1)
             descriptor.write(b'\x01\x00')  # Habilitar nuevamente
+            
             self.activo = True
             self.activar = True
         except Exception as e:
             print("Error en la conexion por bluetooth:", e)
 
-
     def sendString(self, message):
-        if self.activo == True:
+        if self.activo:
             try:
                 self.rx_characteristic.write(message.encode('utf-8'))
             except Exception as e:
-                self.connect()
+                self.activo = False
+                self.connect_thread = threading.Thread(target=self.connect)
+                self.connect_thread.start()
                 print("Error en el envío de datos a bluetooth:", e)
 
-    # LEER DATOS
     def readDevicesData(self):
         if self.activo == False:
-            self.connect()
-
-        
+            
+            self.connect_thread = threading.Thread(target=self.connect)
+            self.connect_thread.start()
+        return

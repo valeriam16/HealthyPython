@@ -6,8 +6,8 @@ from time import sleep
 
 class ConnectingToMongoDB:
     def __init__(self,sender):
-        self.uri = "mongodb+srv://myAtlasDBUser:rEqYo5tJvuYzFlI3@myatlasclusteredu.ipyk1vz.mongodb.net/?retryWrites=true&w=majority&appName=myAtlasClusterEDU"
-        self.databaseName = 'Integrachola'
+        self.uri = "mongodb://dba-admin:dba-pass@159.223.194.191:27017,137.184.180.226:27017,146.190.120.235:27017/?replicaSet=integradora"
+        self.databaseName = 'Integradora'
         self.db = None
         self.client = None
         self.collection = None
@@ -40,7 +40,6 @@ class ConnectingToMongoDB:
         if self.startConnection() == False:
             return
         operations = []
-        print(documents)
         for doc in documents:
             sensor_id = doc.pop('id', None)
             if sensor_id is not None:
@@ -103,6 +102,6 @@ class ConnectingToMongoDB:
         if self.startConnection() == False or self.watching == True:
             return
         threading.Thread(target=self.watchCollection, args=(saveChanges, updateConfig,deviceID)).start()
-        if self.sender.type == "BRZ":
-            threading.Thread(target=self.watchTime, args=(setTime, deviceID)).start()
+        # if self.sender.type == "BRZ":
+        #     threading.Thread(target=self.watchTime, args=(setTime, deviceID)).start()
         

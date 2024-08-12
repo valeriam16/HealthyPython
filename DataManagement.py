@@ -20,6 +20,7 @@ class DataManagement:
         self.connectionPsa = ConnectingToMongoDB(self.serialPortInstance)
 
         self.listaJson = []
+        self.time = ""
         self.deviceID = self.leer_configuracion()
 
         self.loadJson()
@@ -116,7 +117,9 @@ class DataManagement:
 
         self.listaJson = []
         self.listaJson.extend(self.serialPortInstance.requestData())  
+        self.enviarHora(self.listaJson)
         self.listaJson.extend(self.bluetoothPortInstance.requestData())  
+
         with open("data.json", 'r') as file:
             data = json.load(file)
             self.listaJson.extend(data)
@@ -151,12 +154,18 @@ class DataManagement:
                     
         return True
     
+    def enviarHora(self, array):
+        for item in array:
+            if item["identifier"] == "RLJ":
+                self.setTime(self.bluetoothPortInstance,item["value"])
+                return
+
     def setTime(self, sender, time):
         print("Enviando hora al dispositivo..."+time)
         sender.sendString("RLJ:"+time)
 
 if __name__ == "__main__":
-    # sleep(60)
+    sleep(40)
     port = ["/dev/ttyUSB0","/dev/ttyUSB1"]
     baudrate = 9600
     instancia = DataManagement(port, baudrate)

@@ -1,37 +1,37 @@
 [
   {
-    "id": 5,
+    "id": 3,
     "type": "BRZ",
     "sensors": [
       {
-        "id": 25,
+        "id": 9,
         "type": "RTC"
       },
       {
-        "id": 26,
+        "id": 10,
         "type": "PSS"
       },
       {
-        "id": 27,
+        "id": 11,
         "type": "DST"
       },
       {
-        "id": 28,
+        "id": 12,
         "type": "TMP"
       },
       {
-        "id": 29,
+        "id": 13,
         "type": "ALC"
       },
       {
-        "id": 30,
+        "id": 14,
         "type": "PAN"
       }
     ],
     "configurations": [
       {
         "type": "DST",
-        "value": "2"
+        "value": "100.0"
       },
       {
         "type": "PSS",
@@ -48,22 +48,22 @@
     ]
   },
   {
-    "id": 7,
+    "id": 4,
     "type": "PSA",
     "sensors": [
       {
-        "id": 33,
+        "id": 15,
         "type": "PSO"
       },
       {
-        "id": 34,
+        "id": 16,
         "type": "RLJ"
       }
     ],
     "configurations": [
       {
         "type": "CAL",
-        "value": "76"
+        "value": "2000"
       }
     ]
   }

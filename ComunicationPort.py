@@ -55,6 +55,6 @@ class ComunicationPort():
                 if dispositivo['type'] == self.type:
                     for sensor in dispositivo['sensors']:
                         self.sendString("REA:"+str(sensor['id']))
-        time.sleep(3) 
+        time.sleep(1) 
         self.readDevicesData()
         return self.parseData()
